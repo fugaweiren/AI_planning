@@ -1,64 +1,220 @@
 class KnowledgeGraph:
     def __init__(self):
-        self.agent_position = (1,1)
-        self.goal_position = (7,7)
-        self.KG = nx.DiGraph()
+        self.G = nx.DiGraph()
         self.env = None
-    all_policies = {
-        # Move to Goal
-        'move_towards_goal' : lambda agent_pos, obs: 'move_forward' if obs['front_clear'] else None,
-        'turn_left_if_blocked' : lambda agent_pos, obs: 'move_left' if not obs['front_clear'] and not obs['right_clear'] else None,
-        'turn_right_if_blocked' : lambda agent_pos, obs: 'move_right' if not obs['front_clear'] and not obs['left_clear'] else None,
-        # Key
-        #'pickup_key': lambda agent_pos, obs: 'pickup' if obs['key_nearby'] else None,
-        'open_door' : lambda agent_pos, obs: 'unlock' if obs['door_nearby'] else None,
-        'find_key' : lambda agent_pos, obs: 'move_to_key' if obs['key_nearby'] else None,
-    }
-    obs = {
-        'front_clear' : False,
-        'right_clear' : False,
-        'left_clear' : False,
-        'key_nearby' : False,
-        'door_nearby' : False
-    }
+    def initialize(self):
+        self.G.add_node("agent", position=(1, 1), front_block=True, left_block=False, right_block=False, direction=0)
+        self.G.add_node("goal", position=(self.env.width - 1, self.env.height - 1))
+        self.G.add_node("obstacle", position=self.get_wall_coord())
 
-    def set_agent_position(self, position, front_clear=False, left_clear = False, right_clear = False):
-        self.agent_position = position
-        self.obs['front_clear'] = front_clear
-        self.obs['right_clear'] = right_clear
-        self.obs['left_clear'] = left_clear
-        
-        self.KG.add_node('agent', position = position, front_clear = front_clear, left_clear = left_clear, right_clear = right_clear)
- 
-    def set_goal_position(self, position):
-        self.KG.add_node('goal', position = position)
-        self.KG.add_edge('agent', 'goal', action='move_towards_goal')
+        self.G.add_edge("agent", "goal", action="move_forward")
 
-    def set_obstacle(self, position):
-        self.KG.add_node('obstacle', position = position, type='Wall')
-        self.KG.add_edge('agent', 'obstacle', relation = 'avoid')
-        
-    def show_agent_position(self):
-        print(self.agent_position)
+    def agent_check_surrounding(self):
+      if isinstance(self.env.grid.get(self.env.agent_pos[0]+1, self.env.agent_pos[1]) , gym_minigrid.minigrid.Wall):
+        self.update_wall_coord(self.env.agent_pos[0]+1, self.env.agent_pos[1])
+      if isinstance(self.env.grid.get(self.env.agent_pos[0]+1, self.env.agent_pos[1]-1) , gym_minigrid.minigrid.Wall):
+        self.update_wall_coord(self.env.agent_pos[0]+1, self.env.agent_pos[1]-1)
+      if isinstance(self.env.grid.get(self.env.agent_pos[0]+1, self.env.agent_pos[1]+1) , gym_minigrid.minigrid.Wall):
+        self.update_wall_coord(self.env.agent_pos[0]+1, self.env.agent_pos[1]+1)
+      if isinstance(self.env.grid.get(self.env.agent_pos[0]-1, self.env.agent_pos[1]) , gym_minigrid.minigrid.Wall):
+        self.update_wall_coord(self.env.agent_pos[0]-1, self.env.agent_pos[1])
+      if isinstance(self.env.grid.get(self.env.agent_pos[0]-1, self.env.agent_pos[1]-1) , gym_minigrid.minigrid.Wall):
+        self.update_wall_coord(self.env.agent_pos[0]-1, self.env.agent_pos[1]-1)
+      if isinstance(self.env.grid.get(self.env.agent_pos[0]-1, self.env.agent_pos[1]+1) , gym_minigrid.minigrid.Wall):
+        self.update_wall_coord(self.env.agent_pos[0]-1, self.env.agent_pos[1]+1)
+      if isinstance(self.env.grid.get(self.env.agent_pos[0], self.env.agent_pos[1]-1) , gym_minigrid.minigrid.Wall):
+        self.update_wall_coord(self.env.agent_pos[0], self.env.agent_pos[1]-1)
+      if isinstance(self.env.grid.get(self.env.agent_pos[0], self.env.agent_pos[1]+1) , gym_minigrid.minigrid.Wall):
+        self.update_wall_coord(self.env.agent_pos[0], self.env.agent_pos[1]+1)
+      if self.G.nodes["agent"]["direction"] == 0:
+        self.G.nodes["agent"]["front_block"] = (self.env.agent_pos[0] + 1, self.env.agent_pos[1]) in self.G.nodes['obstacle']['position']
+        self.G.nodes["agent"]["left_block"] = (self.env.agent_pos[0], self.env.agent_pos[1] - 1) in self.G.nodes['obstacle']['position']
+        self.G.nodes["agent"]["right_block"] = (self.env.agent_pos[0], self.env.agent_pos[1] + 1) in self.G.nodes['obstacle']['position']
+        print(self.env.grid.get(self.env.agent_pos[0]+1, self.env.agent_pos[1]))
+      elif self.G.nodes["agent"]["direction"] == 1:
+        self.G.nodes["agent"]["front_block"] = (self.env.agent_pos[0], self.env.agent_pos[1] + 1) in self.G.nodes['obstacle']['position']
+        self.G.nodes["agent"]["left_block"] = (self.env.agent_pos[0] + 1, self.env.agent_pos[1]) in self.G.nodes['obstacle']['position']
+        self.G.nodes["agent"]["right_block"] = (self.env.agent_pos[0] - 1, self.env.agent_pos[1]) in self.G.nodes['obstacle']['position']
+        print(self.env.grid.get(self.env.agent_pos[0], self.env.agent_pos[1]+1))
+      elif self.G.nodes["agent"]["direction"] == 2:
+        self.G.nodes["agent"]["front_block"] = (self.env.agent_pos[0] - 1, self.env.agent_pos[1]) in self.G.nodes['obstacle']['position']
+        self.G.nodes["agent"]["left_block"] = (self.env.agent_pos[0], self.env.agent_pos[1] + 1) in self.G.nodes['obstacle']['position']
+        self.G.nodes["agent"]["right_block"] = (self.env.agent_pos[0], self.env.agent_pos[1] - 1) in self.G.nodes['obstacle']['position']
+        print(self.env.grid.get(self.env.agent_pos[0]-1, self.env.agent_pos[1]))
+      else:
+        self.G.nodes["agent"]["front_block"] = (self.env.agent_pos[0], self.env.agent_pos[1] - 1) in self.G.nodes['obstacle']['position']
+        self.G.nodes["agent"]["left_block"] = (self.env.agent_pos[0] - 1, self.env.agent_pos[1]) in self.G.nodes['obstacle']['position']
+        self.G.nodes["agent"]["right_block"] = (self.env.agent_pos[0] + 1, self.env.agent_pos[1]) in self.G.nodes['obstacle']['position']
+        print(self.env.grid.get(self.env.agent_pos[0], self.env.agent_pos[1]-1))
+      print(self.G.nodes['agent'])
 
-    def apply_policies(self):
-        for policy_name, policy_function in self.all_policies.items():
-            action = policy_function(self.agent_position, self.obs)
-           # if action == 'move_forward':
-           #     return env.actions.forward 
-           # elif action == 'move_left':
-           #     return env.actions.left
-           # elif action == 'move_right':
-           #     return env.actions.right
-        return "move_forward"
+    def update_knowledge_graph(self, env):
+      # Update agent position
+      self.env = env
+      self.G.nodes["agent"]["position"] = (env.agent_pos[0], env.agent_pos[1])
+      self.G.nodes["agent"]["direction"] = env.agent_dir
 
-    def update_knowledge_graph(env, obs):
-        self.env = env
-        self.agent_position = self.env.agent_pos
-        self.obs = obs
-        
-        if self.obs.get('key_nearby'):
-            self.KG.add_node('key', position=obs['key_position'])
-            self.add_edge(self.agent_position, 'key', relation='collect')
-            
-        
+      # Update agent's surroundings (front_clear, left_clear, right_clear)
+      self.agent_check_surrounding()
+      # 0 - |>
+      # 1 - V
+      # 2 - <|
+      # 3 - ^
+
+      # Optionally update edges if relationships between entities have changed
+      if not self.G.nodes["agent"]["front_block"] and not self.G.nodes["agent"]["right_block"] and not self.G.nodes["agent"]["left_block"]:
+        if self.G.nodes["agent"]["direction"] == 0 and (self.env.agent_pos[0] + 1, self.env.agent_pos[1] - 1) in self.G.nodes['obstacle']['position'] and (self.env.agent_pos[0] + 1, self.env.agent_pos[1] + 1) in self.G.nodes['obstacle']['position']:
+            self.G.add_edge("agent", "goal", action="move_forward")
+        elif self.G.nodes["agent"]["direction"] == 1 and (self.env.agent_pos[0] + 1, self.env.agent_pos[1] + 1) in self.G.nodes['obstacle']['position'] and (self.env.agent_pos[0] - 1, self.env.agent_pos[1] + 1) in self.G.nodes['obstacle']['position']:
+            self.G.add_edge("agent", "goal", action="move_forward")
+
+        elif abs(self.env.agent_pos[0] - self.G.nodes['goal']['position'][0]) < abs(self.env.agent_pos[1] - self.G.nodes['goal']['position'][1]):
+          if self.G.nodes["agent"]["direction"] == 0:
+            self.G.add_edge("agent", "goal", action="move_forward")
+          elif self.G.nodes['agent']['direction'] == 1:
+            self.G.add_edge("agent", "goal", action="turn_left")
+          elif self.G.nodes['agent']['direction'] == 2:
+            self.G.add_edge("agent", "goal", action="turn_left")
+          else:
+            self.G.add_edge("agent", "goal", action="turn_right")
+        elif abs(self.env.agent_pos[0] - self.G.nodes['goal']['position'][0]) > abs(self.env.agent_pos[1] - self.G.nodes['goal']['position'][1]):
+          if self.G.nodes["agent"]["direction"] == 0:
+            self.G.add_edge("agent", "goal", action="turn_right")
+          elif self.G.nodes['agent']['direction'] == 1:
+            self.G.add_edge("agent", "goal", action="move_forward")
+          elif self.G.nodes['agent']['direction'] == 2:
+            self.G.add_edge("agent", "goal", action="turn_left")
+          else:
+            self.G.add_edge("agent", "goal", action="turn_right")
+        else:
+          if self.env.agent_pos[0] < self.G.nodes['goal']['position'][0]:
+            if self.G.nodes["agent"]["direction"] == 0:
+              self.G.add_edge("agent", "goal", action="move_forward")
+            elif self.G.nodes["agent"]["direction"] == 1:
+              self.G.add_edge("agent", "goal", action="turn_left")
+            elif self.G.nodes["agent"]["direction"] == 3:
+              self.G.add_edge("agent", "goal", action="turn_right")
+
+      elif self.G.nodes["agent"]["front_block"] and not self.G.nodes["agent"]["right_block"] and not self.G.nodes["agent"]["left_block"]:
+        #if self.env.agent_pos[0] < self.G.nodes['goal']['position'][0]:
+        if self.G.nodes["agent"]["direction"] == 0:
+          self.G.add_edge("agent", "goal", action="turn_right")
+        elif self.G.nodes['agent']['direction'] == 1:
+          self.G.add_edge("agent", "goal", action="turn_left")
+        elif self.G.nodes['agent']['direction'] == 2:
+          self.G.add_edge("agent", "goal", action="turn_left")
+        else:
+          self.G.add_edge("agent", "goal", action="turn_right")
+
+
+      elif self.G.nodes["agent"]["front_block"] and self.G.nodes["agent"]["left_block"] and not self.G.nodes["agent"]["right_block"]:
+          self.G.add_edge("agent", "goal", action="turn_right")
+
+      elif self.G.nodes["agent"]["front_block"] and not self.G.nodes["agent"]["left_block"] and self.G.nodes["agent"]["right_block"]:
+        if self.G.nodes["agent"]["direction"] == 3:
+          if (self.env.agent_pos[0] + 1, self.env.agent_pos[1] +1) not in self.G.nodes['obstacle']['position']:
+            self.G.add_edge("agent", "goal", action="move_forward")
+
+        elif abs(self.env.agent_pos[0] - self.G.nodes['goal']['position'][0]) < abs(self.env.agent_pos[1] - self.G.nodes['goal']['position'][1]):
+          self.G.add_edge("agent", "goal", action="turn_right")
+        elif abs(self.env.agent_pos[0] - self.G.nodes['goal']['position'][0]) > abs(self.env.agent_pos[1] - self.G.nodes['goal']['position'][1]):
+          self.G.add_edge("agent", "goal", action="turn_left")
+        else:
+          if self.G.nodes["agent"]["direction"] == 0:
+            self.G.add_edge("agent", "goal", action="turn_right")
+          if self.G.nodes["agent"]["direction"] == 2:
+            self.G.add_edge("agent", "goal", action="turn_left")
+
+      elif not self.G.nodes["agent"]["front_block"] and self.G.nodes["agent"]["left_block"] and not self.G.nodes["agent"]["right_block"]:
+        if self.G.nodes["agent"]["direction"] == 2 and (self.env.agent_pos[0] - 1, self.env.agent_pos[1] +1) not in self.G.nodes['obstacle']['position']:
+            self.G.add_edge("agent", "goal", action="move_forward")
+        elif self.G.nodes["agent"]["direction"] == 1 and (self.env.agent_pos[0] + 1, self.env.agent_pos[1] +1) not in self.G.nodes['obstacle']['position']:
+            self.G.add_edge("agent", "goal", action="move_forward")
+        elif self.G.nodes["agent"]["direction"] == 1 and (self.env.agent_pos[0] + 1, self.env.agent_pos[1] +1) in self.G.nodes['obstacle']['position']:
+            self.G.add_edge("agent", "goal", action="move_forward")
+
+        elif self.G.nodes["agent"]["direction"] == 0:
+          if (self.env.agent_pos[0] + 1, self.env.agent_pos[1] +1) not in self.G.nodes['obstacle']['position']:
+            self.G.add_edge("agent", "goal", action="move_forward")
+        elif abs(self.env.agent_pos[0] - self.G.nodes['goal']['position'][0]) < abs(self.env.agent_pos[1] - self.G.nodes['goal']['position'][1]):
+          self.G.add_edge("agent", "goal", action="move_forward")
+        elif abs(self.env.agent_pos[0] - self.G.nodes['goal']['position'][0]) > abs(self.env.agent_pos[1] - self.G.nodes['goal']['position'][1]):
+          self.G.add_edge("agent", "goal", action="turn_right")
+        else:
+          self.G.add_edge("agent", "goal", action="move_forward")
+
+
+      elif not self.G.nodes["agent"]["front_block"] and not self.G.nodes["agent"]["left_block"] and self.G.nodes["agent"]["right_block"]:
+        if self.G.nodes["agent"]["direction"] == 0:
+          self.G.add_edge("agent", "goal", action="move_forward")
+        elif self.G.nodes["agent"]["direction"] == 1:
+          self.G.add_edge("agent", "goal", action="move_forward")
+        elif self.G.nodes["agent"]["direction"] == 2:
+          self.G.add_edge("agent", "goal", action="turn_left")
+        elif self.G.nodes["agent"]["direction"] == 3:
+          self.G.add_edge("agent", "goal", action="move_forward")
+
+      elif not self.G.nodes["agent"]["front_block"] and self.G.nodes["agent"]["left_block"] and self.G.nodes["agent"]["right_block"]:
+        self.G.add_edge("agent", "goal", action="move_forward")
+      
+      elif self.G.nodes["agent"]["front_block"] and self.G.nodes["agent"]["left_block"] and self.G.nodes["agent"]["right_block"]:
+        self.G.add_edge("agent", "goal", action="turn_right")
+      elif not self.G.nodes["agent"]["right_block"]:
+        self.G.add_edge("agent", "goal", action="turn_right")
+      elif not self.G.nodes["agent"]["left_block"]:
+        self.G.add_edge("agent", "goal", action="turn_left")
+
+      elif not self.G.nodes["agent"]["front_block"]:
+        self.G.add_edge("agent", "goal", action="turn_right")
+
+      return self.G
+
+    def get_action(self):
+      if self.G.edges[('agent', 'goal')]['action'] == 'move_forward':
+        return env.actions.forward
+      elif self.G.edges[('agent', 'goal')]['action'] == 'turn_right':
+        return env.actions.right
+      elif self.G.edges[('agent', 'goal')]['action'] == 'turn_left':
+        return env.actions.left
+
+    def get_wall_coord(self):
+      rows = self.env.height
+      cols = self.env.width
+
+      outer_grid = []
+      outer_grid.extend([(0, col) for col in range(cols)])
+      outer_grid.extend([(rows - 1, col) for col in range(cols)])
+      outer_grid.extend([(row, 0) for row in range(1, rows - 1)])
+      outer_grid.extend([(row, cols - 1) for row in range(1, rows - 1)])
+      return outer_grid
+
+    def update_wall_coord(self, x, y):
+      if(x,y) not in self.G.nodes['obstacle']['position']:
+         self.G.nodes['obstacle']['position'].append((x,y))
+
+
+# env = FlatObsWrapper(gym.make('MiniGrid-SimpleCrossingS9N1-v0', render_mode="rgb_array"))
+# env.reset()
+# KG =KnowledgeGraph ()
+# KG.env = env
+# KG.initialize()
+# before_img = env.render()
+
+# ImageConcate = before_img
+
+# for i in range(30):
+#   KG.update_knowledge_graph(env)
+#   action = KG.get_action()
+#   obs, reward, terminated, truncated, info  = env.step(action)
+#   rendered_img = env.render()
+
+#   ImageConcate = np.concatenate([ImageConcate, rendered_img], 1)
+#   if terminated:
+#     break
+
+# env.close()
+# plt.imshow(ImageConcate);
+# #show_video()
+# plt.axis('off')
+# plt.show()
+
