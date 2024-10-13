@@ -160,3 +160,12 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+/.vs/ProjectSettings.json
+/.vs/slnx.sqlite
+/.vs/VSWorkspaceState.json
+/.vs/AI_planning/FileContentIndex/7a0d8d42-5f25-47bf-b8f3-aa411d8b3bf8.vsidx
+/.vs/AI_planning/v17/.wsuo
+/.vs/AI_planning/v17/DocumentLayout.json
+/.vs/AI_planning/FileContentIndex/0b899aeb-c290-4ecf-8d2b-677571e5b7a5.vsidx
+/.vs/AI_planning/FileContentIndex/0b610496-c241-4a81-b037-924360b084ce.vsidx
+/.vs/AI_planning/FileContentIndex
