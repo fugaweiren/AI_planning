@@ -4,10 +4,6 @@
 Lightweight multi-agent gridworld Gym environment built on the [MiniGrid environment](https://github.com/maximecb/gym-minigrid). 
 
 Requirements:
-- Python 3.5+
-- OpenAI Gym
-- NumPy
-- Matplotlib
 
 Please use this bibtex if you want to cite this repository in your publications:
 
@@ -27,6 +23,16 @@ Please use this bibtex if you want to cite this repository in your publications:
 git clone https://github.com/ArnaudFickinger/gym-multigrid
 cd gym-multigrid
 pip install -e .
+
+OR
+
+conda create -n <name> python=3.10
+cd gym-multigrid-master
+pip install -e .
+pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 torchaudio==0.13.0 --extra-index-url https://download.pytorch.org/whl/cu117
+pip install numpy<2
+pip install matplotlib
+
 ```
 
 ## Test
