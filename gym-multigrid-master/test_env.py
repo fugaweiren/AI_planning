@@ -4,7 +4,7 @@ from gym.envs.registration import register
 import argparse
 
 parser = argparse.ArgumentParser(description=None)
-parser.add_argument('-e', '--env', default='soccer', type=str)
+parser.add_argument('-e', '--env', default='collect', type=str)
 
 args = parser.parse_args()
 
@@ -34,7 +34,8 @@ def main():
 
         ac = [env.action_space.sample() for _ in range(nb_agents)]
 
-        obs, _, done, _ = env.step(ac)
+        obs, rewards, done, _ = env.step(ac)
+        print(rewards)
 
         if done:
             break

@@ -33,7 +33,6 @@ class MADDPG:
             actions.append(action)
         return actions
 
-
     def learn(self, memory):
         if not memory.ready():
             return
@@ -53,8 +52,9 @@ class MADDPG:
         all_agents_new_actions = []
         old_agents_actions = []
 
+
         for agent_idx, agent in enumerate(self.agents):
-            
+
             new_states = T.tensor(actor_new_states[agent_idx], 
                                 dtype=T.float).to(device)
 
@@ -67,8 +67,8 @@ class MADDPG:
         
         new_actions = T.cat([acts for acts in all_agents_new_actions], dim=1)
         old_actions = T.cat([acts for acts in old_agents_actions],dim=1)
-
         info = {}
+        
         for agent_idx, agent in enumerate(self.agents):
             info[agent_idx] = {}
             info[agent_idx]["agent_loss"] = 0
@@ -81,6 +81,7 @@ class MADDPG:
             # Each agents have its own critic - approximate with all its actions
             critic_value = agent.critic.forward(states, old_actions).flatten()
             critic_loss = F.mse_loss(target, critic_value)
+            info[agent_idx]["critic_loss"] = critic_loss.item()
             agent.critic.optimizer.zero_grad()
             critic_loss.backward(retain_graph=True)
             agent.critic.optimizer.step()
@@ -90,15 +91,15 @@ class MADDPG:
             oa = old_actions.clone()
             oa[:,agent_idx*self.n_actions:agent_idx*self.n_actions+self.n_actions] = agent.actor.forward(mu_states)            
             actor_loss = -T.mean(agent.critic.forward(states, oa).flatten())
+            info[agent_idx]["agent_loss"] = actor_loss.item()
             
             agent.actor.optimizer.zero_grad()
             actor_loss.backward(retain_graph=True)
             agent.actor.optimizer.step()
 
-            info[agent_idx]["agent_loss"] = actor_loss.item()
-            info[agent_idx]["critic_loss"] = critic_loss.item()
-            
+
+
         for agent in self.agents:    
             agent.update_network_parameters()
-
+        
         return info

@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions.categorical import Categorical
-# from .external_knowledge import get_expert_actions, get_kg_set
+from external_knowledge import get_expert_actions, get_kg_set
 
 
 class CriticNetwork(nn.Module):
@@ -53,28 +53,30 @@ class ActorNetwork(nn.Module):
         self.fc1 = nn.Linear(input_dims, fc1_dims) # x64
         self.fc2 = nn.Linear(fc1_dims, fc2_dims) # x64
 
+        # KG Set
+        self.kg_set = get_kg_set()
+        # print("Using the knowledge set: {}".format(kg_set_name))
+
         # # Models for KG integration
+
         # self.actor_Q = nn.Sequential(
-        #     # self.fc1, self.fc2,
         #     nn.Tanh(),
         #     nn.Linear(64, kg_emb_dim)
         # )
         # self.actor_K = nn.Sequential(
-        #     # self.fc1, self.fc2,
         #     nn.Tanh(),
         #     nn.Linear(64, kg_emb_dim)
         # )
         # self.actor_V = nn.Sequential(
-        #     # self.fc1, self.fc2,
         #     nn.Tanh(),
         #     nn.Linear(64, action_space_n)
         # )
+
+
         # # Define expert rules (ours)
         # self.expert_K = nn.Embedding(len(self.kg_set), kg_emb_dim)
 
-        # # KG Set
-        # self.kg_set = get_kg_set(kg_set_name)
-        # print("Using the knowledge set: {}".format(kg_set_name))
+
 
         # MADDPG 
         self.pi = nn.Linear(fc2_dims, n_actions)
@@ -87,9 +89,10 @@ class ActorNetwork(nn.Module):
     def forward(self, state):
         x = F.relu(self.fc1(state.flatten(start_dim=1)))
         x = F.relu(self.fc2(x)) #state repesentation
+        # x = state.flatten(start_dim=1)
 
         # # Find the expert's actions
-        # expert_actions = get_expert_actions(state, self.kg_set, env_name = self.env_name)# (b x # rules x # actions) or (# rules x # actions)
+        # expert_actions = get_expert_actions(state, self.kg_set)# (b x # rules x # actions) or (# rules x # actions)
 
 
         # # actor_Q(x): rules encoder
@@ -114,7 +117,7 @@ class ActorNetwork(nn.Module):
         ## sample dist, when doing pre-softmax
         # dist = Categorical(logits=T.log(x))
 
-        # This is MADPPG
+        # # This is MADPPG
         pi = T.softmax(self.pi(x), dim=1)
 
         return pi

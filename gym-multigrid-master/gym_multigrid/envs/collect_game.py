@@ -22,6 +22,9 @@ class CollectGameEnv(MultiGridEnv):
         self.balls_index = balls_index
         self.balls_reward = balls_reward
         self.zero_sum = zero_sum
+        
+        self.ball_counts= num_balls[0]
+        
 
         self.world = World
 
@@ -59,10 +62,9 @@ class CollectGameEnv(MultiGridEnv):
         for a in self.agents:
             self.place_agent(a)
 
-
-    def _reward(self, i, rewards, reward=1):
+    def _handle_wall(self,i, rewards, reward=-0.1):
         """
-        Compute the reward to be given upon success
+        Compute the reward if hit wall
         """
         for j,a in enumerate(self.agents):
             if a.index==i or a.index==0:
@@ -70,6 +72,29 @@ class CollectGameEnv(MultiGridEnv):
             if self.zero_sum:
                 if a.index!=i or a.index==0:
                     rewards[j] -= reward
+    def _handle_still(self,i, rewards, reward=-0.1):
+        """
+        Compute the reward if stay still
+        """
+        print("agents still")
+        for j,a in enumerate(self.agents):
+            if a.index==i or a.index==0:
+                rewards[j]+=reward
+            if self.zero_sum:
+                if a.index!=i or a.index==0:
+                    rewards[j] -= reward
+
+    def _reward(self, i, rewards, reward=1):
+        """
+        Compute the reward to be given upon success
+        """
+        # for j,a in enumerate(self.agents):
+        #     if a.index==i or a.index==0:
+        #         rewards[j]+=reward
+        #     if self.zero_sum:
+        #         if a.index!=i or a.index==0:
+        #             rewards[j] -= reward
+        rewards += reward
 
     def _handle_pickup(self, i, rewards, fwd_pos, fwd_cell):
         if fwd_cell:
@@ -81,6 +106,7 @@ class CollectGameEnv(MultiGridEnv):
 
     def _handle_drop(self, i, rewards, fwd_pos, fwd_cell):
         pass
+    
 
     def step(self, actions):
         obs, rewards, done, info = MultiGridEnv.step(self, actions)
@@ -91,8 +117,38 @@ class CollectGame4HEnv10x10N2(CollectGameEnv):
     def __init__(self):
         super().__init__(size=10,
         num_balls=[5],
-        agents_index = [1,2,3],
+        agents_index = [1,2,3,4],
+        balls_index=[0],
+        balls_reward=[10],
+        zero_sum=False)
+        
+class CollectGame1HEnv10x10(CollectGameEnv):
+    def __init__(self):
+        super().__init__(size=10,
+        num_balls=[5],
+        agents_index = [1],
         balls_index=[0],
         balls_reward=[1],
         zero_sum=True)
+
+
+# class CollectGame4HEnv10x10N2(CollectGameEnv):
+#     def __init__(self):
+#         super().__init__(size=10,
+#         num_balls=[5],
+#         agents_index = [1,2,3],
+#         balls_index=[0],
+#         balls_reward=[1],
+#         zero_sum=True)
+
+
+# class CollectGame4HEnv10x10N2(CollectGameEnv):
+#     def __init__(self):
+#         super().__init__(size=10,
+#         num_balls=[5],
+#         agents_index = [1,2,3],
+#         balls_index=[0],
+#         balls_reward=[1],
+#         zero_sum=True)
+
 
