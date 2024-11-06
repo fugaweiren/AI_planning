@@ -58,13 +58,12 @@ class MADDPG:
             new_states = T.tensor(actor_new_states[agent_idx], 
                                 dtype=T.float).to(device)
 
-            new_pi = agent.target_actor.forward(new_states)
+            new_pi, dist = agent.target_actor.forward(new_states)
 
             all_agents_new_actions.append(new_pi)
             old_agents_actions.append(actions[agent_idx])
 
 
-        
         new_actions = T.cat([acts for acts in all_agents_new_actions], dim=1)
         old_actions = T.cat([acts for acts in old_agents_actions],dim=1)
         info = {}
@@ -89,7 +88,7 @@ class MADDPG:
             mu_states = T.tensor(actor_states[agent_idx], dtype=T.float).to(device)
             
             oa = old_actions.clone()
-            oa[:,agent_idx*self.n_actions:agent_idx*self.n_actions+self.n_actions] = agent.actor.forward(mu_states)            
+            oa[:,agent_idx*self.n_actions:agent_idx*self.n_actions+self.n_actions], _ = agent.actor.forward(mu_states)            
             actor_loss = -T.mean(agent.critic.forward(states, oa).flatten())
             info[agent_idx]["agent_loss"] = actor_loss.item()
             

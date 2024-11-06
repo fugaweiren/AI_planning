@@ -7,6 +7,9 @@ from gym.utils import seeding
 from .rendering import *
 from .window import Window
 import numpy as np
+import time
+
+MAX_STEPS = 128
 
 # Size in pixels of a tile in the full-scale human view
 TILE_PIXELS = 32
@@ -227,8 +230,9 @@ class Floor(WorldObj):
 
 
 class Lava(WorldObj):
-    def __init__(self, world):
+    def __init__(self, world, reward=-10):
         super().__init__(world, 'lava', 'red')
+        self.reward = reward
 
     def can_overlap(self):
         return True
@@ -261,10 +265,11 @@ class Wall(WorldObj):
 
 
 class Door(WorldObj):
-    def __init__(self, world, color, is_open=False, is_locked=False):
+    def __init__(self, world, color, is_open=False, is_locked=False, reward = 10):
         super().__init__(world, 'door', color)
         self.is_open = is_open
         self.is_locked = is_locked
+        self.reward = reward
 
     def can_overlap(self):
         """The agent can only walk over this cell when the door is open"""
@@ -324,8 +329,10 @@ class Door(WorldObj):
 
 
 class Key(WorldObj):
-    def __init__(self, world, color='blue'):
+    def __init__(self, world, color, index=1, reward=1):
         super(Key, self).__init__(world, 'key', color)
+        self.index = index
+        self.reward = reward
 
     def can_pickup(self):
         return True
@@ -891,7 +898,7 @@ class MultiGridEnv(gym.Env):
             grid_size=None,
             width=None,
             height=None,
-            max_steps=100,
+            max_steps=10,
             see_through_walls=False,
             seed=2,
             agents=None,
@@ -901,6 +908,7 @@ class MultiGridEnv(gym.Env):
             objects_set = World
     ):
         self.agents = agents
+
 
         # Does the agents have partial or full observation?
         self.partial_obs = partial_obs
@@ -947,7 +955,7 @@ class MultiGridEnv(gym.Env):
         # Environment configuration
         self.width = width
         self.height = height
-        self.max_steps = max_steps
+        self.max_steps = MAX_STEPS
         self.see_through_walls = see_through_walls
 
         # Initialize the RNG
@@ -983,7 +991,7 @@ class MultiGridEnv(gym.Env):
         obs=[self.objects.normalize_obs*ob for ob in obs]
 
         self.ball_counts = self.num_balls[0]
-        return obs
+        return obs, {}
 
     def seed(self, seed=1337):
         # Seed the random number generator
@@ -1255,23 +1263,20 @@ class MultiGridEnv(gym.Env):
 
     def step(self, actions):
         self.step_count += 1
-
         order = np.random.permutation(len(actions))
-
         rewards = np.zeros(len(actions))
         done = False
 
         for i in order:
-
-            # if self.agents[i].terminated or self.agents[i].paused or not self.agents[i].started or actions[i] == self.actions.still:    
-            #     continue
+                
+            if self.agents[i].terminated or self.agents[i].paused:
+                continue
 
             # Get the position in front of the agent
             fwd_pos = self.agents[i].front_pos
 
             # Get the contents of the cell in front of the agent
             fwd_cell = self.grid.get(*fwd_pos)
-
 
             # if fwd_cell is not None and fwd_cell.type =="ball" :
             #     self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
@@ -1286,33 +1291,79 @@ class MultiGridEnv(gym.Env):
 
                 updated_fwd_pos = self.agents[i].front_pos
                 updated_fwd_cell = self.grid.get(*updated_fwd_pos)
-                if updated_fwd_cell is None or updated_fwd_cell.can_overlap():
+
+                # Check if there is a lava tile in front of the agent
+                if updated_fwd_cell is not None and updated_fwd_cell.type == "lava":
+                    self._reward(i, rewards, updated_fwd_cell.reward)
+                    agent_cell = self.grid.get(*self.agents[i].pos)
+                    self._handle_special_moves(i, rewards, self.agents[i].pos, agent_cell)
+
+                elif updated_fwd_cell is None or updated_fwd_cell.can_overlap():
                     self.grid.set(*updated_fwd_pos, self.agents[i])
                     self.grid.set(*self.agents[i].pos, None)
                     self.agents[i].pos = updated_fwd_pos
-                elif fwd_cell is not None and fwd_cell.type =="ball" :
-                    self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+
+                elif updated_fwd_cell is not None and updated_fwd_cell.type =="ball":
+                    self._handle_pickup(i, rewards, updated_fwd_pos, updated_fwd_cell)
                     self.ball_counts -= 1
                     done = self.ball_counts <= 0
+
+                elif updated_fwd_cell is not None and updated_fwd_cell.type =="key":
+                    self._handle_pickup(i, rewards, updated_fwd_pos, updated_fwd_cell)
                 
+                elif self.agents[i].carrying is not None and updated_fwd_cell.type == "door":
+                    if updated_fwd_cell.is_locked:
+                        updated_fwd_cell.toggle(self.agents[i],updated_fwd_pos)
+                        if updated_fwd_cell.is_open:
+                            self.grid.set(*updated_fwd_pos, self.agents[i])
+                            self.grid.set(*self.agents[i].pos, None)
+                            self.agents[i].pos = updated_fwd_pos
+
             # Rotate right
             elif actions[i] == self.actions.right:
                 self.agents[i].dir = (self.agents[i].dir + 1) % 4
                 updated_fwd_pos = self.agents[i].front_pos
                 updated_fwd_cell = self.grid.get(*updated_fwd_pos)
-                if updated_fwd_cell is None or updated_fwd_cell.can_overlap():
+
+                # Check if there is an obstacle in front of the agent
+                if updated_fwd_cell is not None and updated_fwd_cell.type == "lava":
+                    self._reward(i, rewards, updated_fwd_cell.reward)
+                    agent_cell = self.grid.get(*self.agents[i].pos)
+                    self._handle_special_moves(i, rewards, self.agents[i].pos, agent_cell)
+                    #self.agents[i].terminated = True
+
+                elif updated_fwd_cell is None or updated_fwd_cell.can_overlap():
                     self.grid.set(*updated_fwd_pos, self.agents[i])
                     self.grid.set(*self.agents[i].pos, None)
                     self.agents[i].pos = updated_fwd_pos
-                elif fwd_cell is not None and fwd_cell.type =="ball" :
-                    self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+
+                elif updated_fwd_cell is not None and updated_fwd_cell.type =="ball" :
+                    self._handle_pickup(i, rewards, updated_fwd_pos, updated_fwd_cell)
                     self.ball_counts -= 1
                     done = self.ball_counts <= 0
-                
+
+                elif updated_fwd_cell is not None and updated_fwd_cell.type =="key":
+                    self._handle_pickup(i, rewards, updated_fwd_pos, updated_fwd_cell)
+
+                elif self.agents[i].carrying is not None and updated_fwd_cell.type == "door":
+                    if updated_fwd_cell.is_locked:
+                        updated_fwd_cell.toggle(self.agents[i],updated_fwd_pos)
+                        if updated_fwd_cell.is_open:
+                            self.grid.set(*updated_fwd_pos, self.agents[i])
+                            self.grid.set(*self.agents[i].pos, None)
+                            self.agents[i].pos = updated_fwd_pos
 
             # Move forward
             elif actions[i] == self.actions.forward:
-                if fwd_cell is not None:
+
+                # Check if there is an obstacle in front of the agent
+                if fwd_cell is not None and fwd_cell.type == "lava":
+                    self._reward(i, rewards, fwd_cell.reward)
+                    agent_cell = self.grid.get(*self.agents[i].pos)
+                    self._handle_special_moves(i, rewards, self.agents[i].pos, agent_cell)
+                    #self.agents[i].terminated = True
+
+                elif fwd_cell is not None:
                     if fwd_cell.type == 'goal':
                         done = True
                         self._reward(i, rewards, 50)
@@ -1326,9 +1377,24 @@ class MultiGridEnv(gym.Env):
                         self.grid.set(*fwd_pos, self.agents[i])
                         self.grid.set(*self.agents[i].pos, None)
                         self.agents[i].pos = fwd_pos
+
                     elif fwd_cell.type =="wall":
-                        self._handle_wall(i, rewards, -1)
-                
+                        self._handle_wall(i, rewards)
+
+                    elif fwd_cell.type =="key":
+                        self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                        self.grid.set(*fwd_pos, self.agents[i])
+                        self.grid.set(*self.agents[i].pos, None)
+                        self.agents[i].pos = fwd_pos
+
+                    elif self.agents[i].carrying is not None and fwd_cell.type == "door":
+                        if fwd_cell.is_locked:
+                            fwd_cell.toggle(self.agents[i],fwd_pos)
+                        if fwd_cell.is_open:
+                            self.grid.set(*fwd_pos, self.agents[i])
+                            self.grid.set(*self.agents[i].pos, None)
+                            self.agents[i].pos = fwd_pos
+
                 elif fwd_cell is None or fwd_cell.can_overlap() :
                     self.grid.set(*fwd_pos, self.agents[i])
                     self.grid.set(*self.agents[i].pos, None)
@@ -1338,7 +1404,7 @@ class MultiGridEnv(gym.Env):
                 #     self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
 
 
-                self._handle_special_moves(i, rewards, fwd_pos, fwd_cell)
+                #self._handle_special_moves(i, rewards, fwd_pos, fwd_cell)
 
             elif 'build' in self.actions.available and actions[i]==self.actions.build:
                 self._handle_build(i, rewards, fwd_pos, fwd_cell)
@@ -1366,7 +1432,7 @@ class MultiGridEnv(gym.Env):
             else:
                 assert False, "unknown action"
         
-        rewards -= 0.1
+        # rewards -= 0.1
 
         if self.step_count >= self.max_steps:
             done = True
@@ -1378,6 +1444,8 @@ class MultiGridEnv(gym.Env):
 
         obs=[self.objects.normalize_obs*ob for ob in obs]
 
+        
+               
         return obs, rewards, done, {}
 
     def gen_obs_grid(self):
@@ -1460,7 +1528,12 @@ class MultiGridEnv(gym.Env):
 
             highlight_masks = {(i, j): [] for i in range(self.width) for j in range(self.height)}
 
+             
             for i, a in enumerate(self.agents):
+
+            # Terminate agents
+                if a.paused or a.terminated:
+                   continue
 
                 # Compute the world coordinates of the bottom-left corner
                 # of the agent's view area
@@ -1496,7 +1569,9 @@ class MultiGridEnv(gym.Env):
         )
 
         if mode == 'human':
+            self.window.set_caption(f"Step {self.step_count}/ {MAX_STEPS}")
             self.window.show_img(img)
+
 
         return img
 
