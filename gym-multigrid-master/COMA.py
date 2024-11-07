@@ -51,7 +51,7 @@ register(
 
 env = gym.make('multigrid-collect-v0')
 #print(env.max_steps)
-MAX_STEPS = 60
+MAX_STEPS = env.max_steps
 NUM_ENVS = 1
 NUM_AGENTS = 4
 # USE_KG = args.use_kg
