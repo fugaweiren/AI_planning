@@ -367,7 +367,7 @@ class KeyCollectGame4HEnv10x10N2(CollectGameEnv):
             num_balls=[ball_count],
             num_lava=[lava_count],
             key_index=[1], 
-            agents_index = [1,2,3],
+            agents_index = [1,2,3,4],
             balls_index=[0],
             balls_reward=[10],
             lava_reward=[-10],
