@@ -100,7 +100,7 @@ def get_expert_actions(obs, expert_rules, with_agents=False , env_name=""):
                 goal = goals[:, agent_idx].nonzero()
 
                 img_id_meet_condition = goal[:,0][(start[0] < goal[:, 1]).int().nonzero()]
-                expert_actions[img_id_meet_condition, agent_idx, rule_id,actions["Right"]] = 1
+                expert_actions[img_id_meet_condition, agent_idx, rule_id, actions["Right"]] = 1
                 
                 img_id_meet_condition = goal[:,0][(start[0] > goal[:, 1]).int().nonzero()]
                 expert_actions[img_id_meet_condition,agent_idx, rule_id,actions["Left"]] = 1
@@ -125,17 +125,22 @@ def get_expert_actions(obs, expert_rules, with_agents=False , env_name=""):
         if with_agents:
             for agent_idx in range(obs.shape[1]):
 
+
+                goal = goals[:, agent_idx].nonzero()
+
+                # wall_pos[:,1] => If same row as agents, means it is in the forward dircetion of agent, (Left = -1, Right = +1)
+                # wall_pos[:,2] => If same column as agents, means it is in the left(-1)/right(+1) dircetion of agent,(Foward = -1, Behind = +1)
                 expert_actions[:, agent_idx, rule_id,actions["Right"]] = 1
                 expert_actions[:, agent_idx, rule_id,actions["Left"]] = 1
                 expert_actions[:, agent_idx, rule_id,actions["Forward"]] = 1
                 
-                img_id_meet_condition = goals[:,0][torch.logical_and(start[0] - goals[:,1] == -1, start[1] == goals[:,2]).int().nonzero()]
+                img_id_meet_condition = goal[:,0][torch.logical_and(start[0] - goal[:,1] == -1, start[1] == goal[:,2]).int().nonzero()]
                 expert_actions[img_id_meet_condition, agent_idx, rule_id, actions["Right"]] = 0
                 
-                img_id_meet_condition = goals[:,0][torch.logical_and(start[0] - goals[:,1] == 1,  start[1] == goals[:,2]).int().nonzero()]
+                img_id_meet_condition = goal[:,0][torch.logical_and(start[0] - goal[:,1] == 1,  start[1] == goal[:,2]).int().nonzero()]
                 expert_actions[img_id_meet_condition, agent_idx, rule_id, actions["Left"]] = 0
                 
-                img_id_meet_condition = goals[:,0][torch.logical_and(start[1] - goals[:,2] == 1,  start[0] == goals[:,1]).int().nonzero()]
+                img_id_meet_condition = goal[:,0][torch.logical_and(start[1] - goal[:,2] == 1,  start[0] == goal[:,1]).int().nonzero()]
                 expert_actions[img_id_meet_condition, agent_idx, rule_id, actions["Forward"]] = 0
         
         else:
@@ -154,28 +159,28 @@ def get_expert_actions(obs, expert_rules, with_agents=False , env_name=""):
     
     if "go to the ball" in expert_rules:
         rule_id = expert_rules.index("go to the ball")
-        goal_pos = (img == 6).nonzero()
+        goal_pos = (img == 6).nonzero() if not with_agents else (img == 6)
         convert_pos_to_dir_actions(rule_id, agent_pos, goal_pos)
     
     if "go to the key" in expert_rules:
         rule_id = expert_rules.index("go to the key")
-        key_pos = (img == 5).nonzero()
+        key_pos = (img == 5).nonzero() if not with_agents else (img == 5)
         convert_pos_to_dir_actions(rule_id, agent_pos, key_pos)
         
     if "go to the door" in expert_rules:
         rule_id = expert_rules.index("go to the door")
-        door_pos = (img == 4).nonzero()
+        door_pos = (img == 4).nonzero() if not with_agents else (img == 4)
         convert_pos_to_dir_actions(rule_id, agent_pos, door_pos)
     
 
     if "do not hit lava" in expert_rules:
         rule_id = expert_rules.index("do not hit lava")
-        prevent_pos = (img == 9).nonzero()
+        prevent_pos = (img == 9).nonzero() if not with_agents else (img == 9)
         prevent_actions(rule_id, agent_pos, prevent_pos)
 
     if "do not hit wall" in expert_rules:
         rule_id = expert_rules.index("do not hit wall")
-        prevent_pos = (img == 2).nonzero()
+        prevent_pos = (img == 2).nonzero() if not with_agents else (img == 2)
         prevent_actions(rule_id, agent_pos, prevent_pos)
 
     # if "do not hit lava and wall" in expert_rules:
@@ -185,7 +190,7 @@ def get_expert_actions(obs, expert_rules, with_agents=False , env_name=""):
     
     if "turn left when detect front wall" in expert_rules:
         rule_id = expert_rules.index("turn left when detect front wall")
-        wall_pos = (img==2).nonzero()
+        wall_pos = (img==2).nonzero() 
         img_id_meet_condition = wall_pos[:,0][((wall_pos[:,1] == agent_pos[0]).int() * (wall_pos[:,2] == agent_pos[1]-1).int()).nonzero()]
         
         if with_agents:
