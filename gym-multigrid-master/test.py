@@ -2,9 +2,9 @@ import pickle
 import matplotlib.pyplot as plt
 from plot import live_plot, exponential_smoothing
 
-# Load the dictionary from the file
-with open('experiment1.pickle', 'rb') as handle:
-    data_to_plot = pickle.load(handle)
+# # Load the dictionary from the file
+# with open('experiment1.pickle', 'rb') as handle:
+#     data_to_plot = pickle.load(handle)
 
 # with open('D:\Courses\CS5446 AI Planning & Decision Making\experiment1.pickle', 'rb') as handle:
 #     data_to_plot = pickle.load(handle)
@@ -38,5 +38,5 @@ def plot_final_results(data_dict, alpha=0.1, save_path='final_plot.png'):
         ax.set_title(label)
         ax.legend(loc='upper right')
     plt.savefig(save_path)
-    plt.show()
-plot_final_results(data_to_plot)
+    # plt.show()
+# plot_final_results(data_to_plot)

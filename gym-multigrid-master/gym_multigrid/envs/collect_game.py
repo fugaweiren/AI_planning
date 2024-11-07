@@ -253,10 +253,13 @@ class CollectGameEnv(MultiGridEnv):
                     self.grid.set(*fwd_pos, None)
                     self._reward(i, rewards, fwd_cell.reward)
 
-    def _handle_special_moves(self, i, rewards, fwd_pos, fwd_cell): 
-        if fwd_cell:
-            self.agents[i].terminated = True
-            self.grid.set(*fwd_pos, None)
+
+
+    ### For killing agents
+    # def _handle_special_moves(self, i, rewards, fwd_pos, fwd_cell): 
+    #     if fwd_cell:
+    #         self.agents[i].terminated = True
+    #         self.grid.set(*fwd_pos, None)
 
         
     

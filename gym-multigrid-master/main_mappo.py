@@ -1,5 +1,4 @@
 from torch.distributions.categorical import Categorical
-# from utils import DictToListWrapper, live_plot
 from gym.wrappers import RecordEpisodeStatistics
 from gym.vector import SyncVectorEnv
 import gym
@@ -13,39 +12,52 @@ import torch.nn.functional as F
 import random
 import tqdm
 import threading
-from plot import live_plot
+from plot import live_plot, plot_final_results
 from gym_multigrid.multigrid import MAX_STEPS
-
+from config import ENV_CLASS, ENV_RULE_SETS
 # from external_knowledge import get_expert_actions, get_kg_set
 from modified_kg import get_expert_actions, get_kg_set
-# def create_elevator_env():
-#     env = Elevator(instance=5)
-#     env = DictToListWrapper(env)
-#     env = gym.wrappers.RecordEpisodeStatistics(env)
-#     return env
+import argparse
+import os
+from os.path import join, dirname
+import pickle
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--env", default="simple",
+                    help="name of the environment (REQUIRED): simple, lava, key")
+parser.add_argument("--use_kg", action="store_true", default=False,
+                    help="userules")
+parser.add_argument("--kg_set", default=0, type=int,
+                    help="Ruleset option")
+parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file__)), "results/mappo"), type=str,
+                    help="Ruleset")
+parser.add_argument("--steps", default=800000, type=int,
+                    help="Ruleset")
+args = parser.parse_args()
+
+env_entrypt = ENV_CLASS[args.env]
+USE_KG = args.use_kg
+ruleset= ENV_RULE_SETS[args.env][args.kg_set]
 scenario = "multigrid-collect-v0"
 
 register(
     id=scenario,
-    # entry_point='gym_multigrid.envs:CollectGame4HEnv10x10N2',
-    entry_point='gym_multigrid.envs:CollectGame4HEnv10x10N2Lava',
-    # entry_point='gym_multigrid.envs:CollectGame1HEnv10x10',
+    entry_point=env_entrypt,
 )
-env = gym.make('multigrid-collect-v0')
+env = gym.make(scenario)
 
-# NUM_ENVS = 4
 NUM_ENVS = 1
 # envs = SyncVectorEnv([lambda:  gym.make('multigrid-collect-v0') for _ in range(NUM_ENVS)])
 NUM_AGENTS = 4
-USE_KG = False
+
 envs = env
 LEARNING_RATE = 2.5e-4
 
 ROLLOUT_STEPS = MAX_STEPS
 NUM_MINI_BATCHES = NUM_EPOCHS = 4
 # TOTAL_STEPS = 800000
-TOTAL_STEPS = 5000000
+TOTAL_STEPS = args.steps
 
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
@@ -134,7 +146,10 @@ class ACAgent(nn.Module):
         )
 
         kg_emb_dim = 8
-        self.kg_set = get_kg_set("ball with search strats")
+        # self.kg_set = get_kg_set("ball with search strats")
+        self.kg_set = get_kg_set(ruleset)
+        # self.kg_set = get_kg_set("conflicting rules")
+
 
         # Models for KG integration
 
@@ -436,7 +451,7 @@ def get_total_loss(policy_objective, value_loss, entropy_objective, value_loss_c
 
 
 ENABLE_LIVE_PLOT= False
-ENABLE_LIVE_ENV_RENDER= True
+ENABLE_LIVE_ENV_RENDER= False
 TRAIN = True
 
 # Initialize global step counter and reset the environment
@@ -619,13 +634,31 @@ if TRAIN:
         unnormalized_rewards = torch.zeros_like(unnormalized_rewards).to(device)
         logprobs = torch.zeros_like(logprobs).to(device)
         values = torch.zeros_like(values).to(device)
-
-    torch.save(agent.state_dict(), "mappo_agent_model.pth") 
-    import pickle
-    with open('experiment1.pickle', 'wb') as handle:
-        pickle.dump(data_to_plot, handle)
-else:
     
+    KG_STR = f"_USE_KG_{ruleset}" if USE_KG else ""
+
+    FOLDER_NAME = f"steps_{TOTAL_STEPS}_ngames_{len(data_to_plot['Total Reward'])}{KG_STR}"
+    ENV_FOLDER = join(args.result_dir, args.env)
+    
+    
+    results_directory = join(ENV_FOLDER,FOLDER_NAME)
+    os.makedirs(results_directory, exist_ok=True)
+    print(f"Written to {results_directory}")
+
+    
+    torch.save(agent.state_dict(), join(results_directory,"mappo_agent_model.pth"))
+
+    with open(join(results_directory,"experiment1.pickle"), 'wb') as handle:
+        pickle.dump(data_to_plot, handle)
+
+    plot_final_results(data_to_plot, save_path= join(results_directory,"final_plot.png"))
+    
+    with open(join(results_directory,"logs"), "w") as f:
+        f.write(f"Training takes {progress_bar.format_dict['elapsed']}")
+
+
+else:
+    # For qualitative
     initial_state, _ = envs.reset()
     state = torch.Tensor(initial_state).to(device)
     shared_agent = ACAgent().to(device)
