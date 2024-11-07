@@ -316,7 +316,7 @@ agents = COMA(NUM_AGENTS, STATE_DIM, ACTION_DIM, LR_C, LR_A, GAMMA, target_updat
 # Load model weights if needed
 
 KG_STR = f"_USE_KG_{ruleset}" if USE_KG else ""
-FOLDER_NAME = f"steps_{TOTAL_STEPS}_ngames_NA{KG_STR}"
+FOLDER_NAME = f"steps_{args.steps}_ngames_NA{KG_STR}"
 ENV_FOLDER = join(args.result_dir, args.env)
 results_directory = join(ENV_FOLDER,FOLDER_NAME)
 temp_dir = join(results_directory, "model_weights_without_KG")
@@ -418,9 +418,9 @@ with open(join(results_directory,"experiment1.pickle"), 'wb') as handle:
 
 plot_final_results(data_to_plot, save_path= join(results_directory,"final_plot.png"))
 
-with open(join(results_directory,"logs"), "w") as f:
+with open(join(results_directory,"logs"), "w+") as f:
     f.write(f"Training takes {progress_bar.format_dict['elapsed']}")
-os.rename(results_directory, join(dirname(results_directory),f"steps_{TOTAL_STEPS}_ngames_{len(episodes_reward)}{KG_STR}" ))
+os.rename(results_directory, join(dirname(results_directory),f"steps_{args.steps}_ngames_{len(episodes_reward)}{KG_STR}" ))
 print(f"Written to {results_directory}")
 # import pickle
 # with open('experiment_without_KG_project_env_1.pickle', 'wb') as handle:

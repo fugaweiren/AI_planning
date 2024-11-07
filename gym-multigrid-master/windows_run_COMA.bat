@@ -1,11 +1,11 @@
-conda activate maagent
+call conda activate maagent
 @REM python COMA.py --env simple --use_kg --kg_set 0 --steps 1500000
 @REM python COMA.py --env simple --use_kg --kg_set 1 --steps 1500000
-python COMA.py --env simple --use_kg --kg_set 2 --steps 1500000
-python COMA.py --env simple --use_kg --kg_set 3 --steps 1500000
+call python COMA.py --env simple --use_kg --kg_set 2 --steps 1000
+call python COMA.py --env simple --use_kg --kg_set 3 --steps 1000
 
-python COMA.py --env lava --steps 1500000
-python COMA.py --env lava --use_kg --steps 1500000
+call python COMA.py --env lava --steps 1000
+call python COMA.py --env lava --use_kg --steps 1000
 
-python COMA.py --env key --steps 1500000
-python COMA.py --env key --use_kg --steps 1500000
+call python COMA.py --env key --steps 1000
+call python COMA.py --env key --use_kg --steps 1000
