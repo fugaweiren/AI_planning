@@ -24,11 +24,11 @@ import pickle
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--env", default="key",
+parser.add_argument("--env", default="simple",
                     help="name of the environment (REQUIRED): simple, lava, key")
-parser.add_argument("--use_kg", action="store_true", default=False,
+parser.add_argument("--use_kg", action="store_true", default=True,
                     help="userules")
-parser.add_argument("--kg_set", default=0, type=int,
+parser.add_argument("--kg_set", default=2, type=int,
                     help="Ruleset option")
 parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file__)), "results/mappo"), type=str,
                     help="Ruleset")
@@ -49,7 +49,7 @@ env = gym.make(scenario)
 
 NUM_ENVS = 1
 # envs = SyncVectorEnv([lambda:  gym.make('multigrid-collect-v0') for _ in range(NUM_ENVS)])
-NUM_AGENTS = 4
+NUM_AGENTS = len(env.agents)
 
 envs = env
 LEARNING_RATE = 2.5e-4
@@ -452,7 +452,7 @@ def get_total_loss(policy_objective, value_loss, entropy_objective, value_loss_c
 
 ENABLE_LIVE_PLOT= False
 ENABLE_LIVE_ENV_RENDER= False
-TRAIN = True
+TRAIN = False
 
 # Initialize global step counter and reset the environment
 global_step = 0
@@ -672,6 +672,7 @@ else:
         with torch.no_grad():
             # Get action, log probability, and entropy from the agent
             action, _, _ = shared_agent.get_action_logprob_entropy(state)
+            action = action[0] if len(action.shape) ==2 else action
             next_state, reward, done, info = envs.step(action.cpu().numpy())
             state = torch.Tensor(next_state).to(device)
         if done:
