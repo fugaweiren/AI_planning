@@ -26,20 +26,25 @@ import pickle
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", default="simple",
                     help="name of the environment (REQUIRED): simple, lava, key")
-parser.add_argument("--use_kg", action="store_true", default=True,
+parser.add_argument("--use_kg", action="store_true", default=False,
                     help="userules")
-parser.add_argument("--kg_set", default=2, type=int,
+parser.add_argument("--kg_set", default=0, type=int,
                     help="Ruleset option")
 parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file__)), "results/mappo"), type=str,
                     help="Ruleset")
 parser.add_argument("--steps", default=1000, type=int,
                     help="Ruleset")
+parser.add_argument("--vision_dim", default=7, type=int,
+                    help="percept size")
 args = parser.parse_args()
 
 env_entrypt = ENV_CLASS[args.env]
 USE_KG = args.use_kg
 ruleset= ENV_RULE_SETS[args.env][args.kg_set]
 scenario = "multigrid-collect-v0"
+
+if args.kg_set == "lava2":
+    args.vision_dim = 5
 
 register(
     id=scenario,
@@ -108,9 +113,9 @@ class ACAgent(nn.Module):
 
         ### ------------- TASK 1.1 ----------- ###
         ### ----- YOUR CODES START HERE ------ ###
-        actor_input_dim = 7*7*6  # Input dimension for the actor (state dim)
+        actor_input_dim = args.vision_dim* args.vision_dim*6  # Input dimension for the actor (state dim)
         actor_output_dim = 3  # Output dimension for the actor (number of actions)
-        critic_input_dim = NUM_AGENTS*7*7*6   # Input dimension for the critic
+        critic_input_dim = NUM_AGENTS* args.vision_dim* args.vision_dim*6   # Input dimension for the critic
         critic_output_dim = 1  # Output dimension for the critic (value estimate)
         ### ------ YOUR CODES END HERE ------- ###
 
@@ -662,7 +667,7 @@ else:
     initial_state, _ = envs.reset()
     state = torch.Tensor(initial_state).to(device)
     shared_agent = ACAgent().to(device)
-    # state_dict = torch.load("gym-multigrid-master/results/mappo/no_clip_epoch_800K_noKG/mappo_agent_model.pth")
+    # state_dict = torch.load("gym-multigrid-master/results/mappo/simple/no_clip_epoch_800K_noKG/mappo_agent_model.pth")
     state_dict = torch.load("mappo_agent_model.pth")
     shared_agent.load_state_dict(state_dict)
     done = False
@@ -672,7 +677,7 @@ else:
         with torch.no_grad():
             # Get action, log probability, and entropy from the agent
             action, _, _ = shared_agent.get_action_logprob_entropy(state)
-            action = action[0] if len(action.shape) ==2 else action
+            action = action if len(action.shape) ==2 else action
             next_state, reward, done, info = envs.step(action.cpu().numpy())
             state = torch.Tensor(next_state).to(device)
         if done:

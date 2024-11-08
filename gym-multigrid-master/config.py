@@ -1,6 +1,7 @@
 ENV_CLASS = {
     "simple": 'gym_multigrid.envs:CollectGame4HEnv10x10N2',
     "lava" : 'gym_multigrid.envs:CollectGame4HEnv10x10N2Lava',
+    "lava_complicated" : 'gym_multigrid.envs:CollectGame4HEnv20x20N2Lava',
     "key" : 'gym_multigrid.envs:KeyCollectGame4HEnv10x10N2'
 }
 

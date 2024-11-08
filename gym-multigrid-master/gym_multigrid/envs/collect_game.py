@@ -266,10 +266,10 @@ class CollectGameEnv(MultiGridEnv):
             self.grid.set(*fwd_pos, None)         
 
     ### For killing agents
-    # def _handle_special_moves(self, i, rewards, fwd_pos, fwd_cell): 
-    #     if fwd_cell:
-    #         self.agents[i].terminated = True
-    #         self.grid.set(*fwd_pos, None)
+    def _handle_special_moves(self, i, rewards, fwd_pos, fwd_cell): 
+        if fwd_cell:
+            self.agents[i].terminated = True
+            self.grid.set(*fwd_pos, None)
 
         
     
@@ -354,12 +354,13 @@ class CollectGame4HEnv10x10N2Lava(CollectGameEnv):
 class CollectGame4HEnv20x20N2Lava(CollectGame4HEnv10x10N2Lava):
     def __init__(self):
         super().__init__(size=20,
-        num_balls=[5],
+        num_balls=[10],
         agents_index = [1,2,3,4],
         balls_index=[0],
-        num_lava=[3],
+        num_lava=[20],
         lava_reward=[-50],
         balls_reward=[50],
+        view_size=5,
         zero_sum=False)
 
 class CollectGame1HEnv10x10(CollectGameEnv):

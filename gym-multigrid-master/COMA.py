@@ -33,9 +33,11 @@ parser.add_argument("--use_kg", action="store_true", default=False,
 parser.add_argument("--kg_set", default=0, type=int,
                     help="Ruleset option")
 parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file__)), "results/coma"), type=str,
-                    help="Ruleset")
+                    help="result_dir")
 parser.add_argument("--steps", default=1500000, type=int,
-                    help="Ruleset")
+                    help="steps")
+parser.add_argument("--vision_dim", default=7, type=int,
+                    help="percept size")
 args = parser.parse_args()
 
 env_entrypt = ENV_CLASS[args.env]
@@ -53,9 +55,8 @@ env = gym.make('multigrid-collect-v0')
 #print(env.max_steps)
 MAX_STEPS = env.max_steps
 NUM_ENVS = 1
-NUM_AGENTS = 4
-# USE_KG = args.use_kg
-STATE_DIM = 7*7*6
+NUM_AGENTS = len(env.agents)
+STATE_DIM = args.vision_dim*args.vision_dim*6
 ACTION_DIM = 3
 envs = env
 LR_A = 0.0001

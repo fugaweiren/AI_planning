@@ -1,3 +1,4 @@
 __pycache__/
 results/mappo/simple/clip_epoch_5M_noKG_fixed_rollout_128/experiment1.pickle
 results/mappo/simple/no_clip_epoch_800K_noKG/experiment1.pickle
+results/mappo/simple/clip_epoch_5M_KG_searchstrat_rollout_128/experiment1.pickle
