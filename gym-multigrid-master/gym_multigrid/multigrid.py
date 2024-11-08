@@ -1319,6 +1319,9 @@ class MultiGridEnv(gym.Env):
                             self.grid.set(*self.agents[i].pos, None)
                             self.agents[i].pos = updated_fwd_pos
 
+                elif updated_fwd_cell.type == "wall":
+                    self._handle_wall(i, rewards)
+
             # Rotate right
             elif actions[i] == self.actions.right:
                 self.agents[i].dir = (self.agents[i].dir + 1) % 4
@@ -1353,6 +1356,9 @@ class MultiGridEnv(gym.Env):
                             self.grid.set(*self.agents[i].pos, None)
                             self.agents[i].pos = updated_fwd_pos
 
+                elif updated_fwd_cell.type == "wall":
+                    self._handle_wall(i, rewards)
+                    
             # Move forward
             elif actions[i] == self.actions.forward:
 

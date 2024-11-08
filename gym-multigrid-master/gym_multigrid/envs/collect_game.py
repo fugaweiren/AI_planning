@@ -167,6 +167,9 @@ class CollectGameEnv(MultiGridEnv):
         self.ball_counts= num_balls[0]
         self.world = World
 
+        self.death_count = 0
+        self.hit_wall_count = 0
+
         agents = []
         for i in agents_index:
             agents.append(Agent(self.world, i, view_size=view_size))
@@ -212,6 +215,8 @@ class CollectGameEnv(MultiGridEnv):
         """
         Compute the reward if hit wall
         """
+        self.hit_wall_count += 1   #Hit wall count 
+
         for j,a in enumerate(self.agents):
             if a.index==i or a.index==0:
                 rewards[j]+=reward
@@ -253,7 +258,12 @@ class CollectGameEnv(MultiGridEnv):
                     self.grid.set(*fwd_pos, None)
                     self._reward(i, rewards, fwd_cell.reward)
 
-
+    ### For counting agents
+    def _handle_special_moves(self, i, rewards, fwd_pos, fwd_cell): 
+        if fwd_cell:
+            self.death_count += 1
+            self.agents[i].terminated = True
+            self.grid.set(*fwd_pos, None)         
 
     ### For killing agents
     # def _handle_special_moves(self, i, rewards, fwd_pos, fwd_cell): 
@@ -282,6 +292,18 @@ class CollectGameEnv(MultiGridEnv):
         
     
         return obs, rewards, done, info
+    
+    def reset(self):
+        obs, info = MultiGridEnv.reset(self)
+
+        ##Return info
+        info = {"number of agents died:": self.death_count,
+                "amount of times agents hit wall:": self.hit_wall_count
+                }
+        self.death_count = 0
+        self.hit_wall_count = 0
+        
+        return obs, info
 
 class CollectGame4HEnv10x10N2(CollectGameEnv):
     def __init__(self):
@@ -328,6 +350,17 @@ class CollectGame4HEnv10x10N2Lava(CollectGameEnv):
                 for i in range(lava_count):
                     self.place_obj(Lava(self.world, reward))
                     lava_count -= 1
+
+class CollectGame4HEnv20x20N2Lava(CollectGame4HEnv10x10N2Lava):
+    def __init__(self):
+        super().__init__(size=20,
+        num_balls=[5],
+        agents_index = [1,2,3,4],
+        balls_index=[0],
+        num_lava=[3],
+        lava_reward=[-50],
+        balls_reward=[50],
+        zero_sum=False)
 
 class CollectGame1HEnv10x10(CollectGameEnv):
     def __init__(self):

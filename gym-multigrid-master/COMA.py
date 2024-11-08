@@ -263,7 +263,7 @@ class COMA:
                 if done[i][t]:
                     r[t] = reward[:, i][t]
                 else:
-                    r[t] = reward[:, i][t] + self.gamma * Q_taken_target[t]
+                    r[t] = reward[:, i][t] + self.gamma * Q_taken_target[t+1]
 
             critic_loss = torch.mean((r - Q_taken) ** 2)
 

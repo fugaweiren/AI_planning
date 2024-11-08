@@ -24,7 +24,7 @@ import pickle
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--env", default="simple",
+parser.add_argument("--env", default="key",
                     help="name of the environment (REQUIRED): simple, lava, key")
 parser.add_argument("--use_kg", action="store_true", default=False,
                     help="userules")
@@ -32,7 +32,7 @@ parser.add_argument("--kg_set", default=0, type=int,
                     help="Ruleset option")
 parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file__)), "results/mappo"), type=str,
                     help="Ruleset")
-parser.add_argument("--steps", default=800000, type=int,
+parser.add_argument("--steps", default=1000, type=int,
                     help="Ruleset")
 args = parser.parse_args()
 
