@@ -6,8 +6,6 @@ from modified_kg import get_expert_actions
 
 import gym
 from gym.envs.registration import register
-
-
 import tqdm
 
 from plot import live_plot, plot_final_results
@@ -25,15 +23,17 @@ import imageio
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", default="simple",
                     help="name of the environment (REQUIRED): simple, lava, key")
-parser.add_argument("--use_kg", action="store_true", default=True,
+parser.add_argument("--use_kg", action="store_true", default=False,
                     help="userules")
-parser.add_argument("--kg_set", default=2, type=int,
+parser.add_argument("--kg_set", default=0, type=int,
                     help="Ruleset option")
 parser.add_argument("--load_model_path",  default="expert", type=str,
                     help="model path, but for COMA: Model directories")
 parser.add_argument("--model_type", default="expert", type=str,
-                    help="expert, MAPPO, COMA")
+                    help="expert, MAPPO, COMA, random")
 parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file__)), "results_eval"), type=str,
+                    help="Ruleset")
+parser.add_argument("--viz_dir",  default=join(dirname(os.path.abspath(__file__)), "results_eval_viz"), type=str,
                     help="Ruleset")
 parser.add_argument("--steps", default=1000, type=int,
                     help="eval_steps")
@@ -300,6 +300,13 @@ if USE_KG:
         print("UNKNOWN model type")
         assert False
 else:
+    if args.model_type == "MAPPO":
+        shared_agent = ACAgent().load_state_dict(args.load_model_path)
+    elif args.model_type == "COMA":
+        shared_agent = COMAAgentWrapper(args.load_model_path)
+    else:
+        print("UNKNOWN model type")
+        assert False
     shared_agent = RandomPolicy()
 
 done = False
@@ -377,5 +384,9 @@ with open(join(results_directory,"eval_stats"), "w+") as f:
 gif_filename = join(results_directory, f'{args.env}_{args.model_type}_{FOLDER_NAME}_animation.gif')
 imageio.mimsave(gif_filename, frames, fps=15)  # Adjust fps as needed
 
+ENV_FOLDER = join(args.viz_dir, args.env)
+os.makedirs(ENV_FOLDER, exist_ok=True)
+with open(join(ENV_FOLDER, f"{args.env}_{args.model_type}_{FOLDER_NAME}_eval.pickle"), 'wb') as handle:
+    pickle.dump(data_to_plot, handle)
 
 print(f"Written to {results_directory}")

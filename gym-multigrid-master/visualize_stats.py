@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from config import ENV_CLASS, ENV_RULE_SETS
 from plot import exponential_smoothing
 import os
-from os.path import join
+from os.path import join, dirname
 import pickle
 
 import numpy as np 
@@ -12,7 +12,8 @@ from collections import Counter
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", default="simple",
                     help="name of the environment (REQUIRED): simple, lava, lava2, key")
-parser.add_argument("--model_dir")
+parser.add_argument("--model_dir",  default=join(dirname(os.path.abspath(__file__)), "results_eval_viz"), type=str,
+                    help="model_dir")
 
 args = parser.parse_args()
 
