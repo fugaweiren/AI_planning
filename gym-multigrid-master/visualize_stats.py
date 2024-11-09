@@ -21,7 +21,9 @@ args = parser.parse_args()
 episode_rewards = {}
 num_agents_died = {}
 wall_hits = {}
-for file in os.listdir(args.model_path):
+PATH = join(args.model_dir, args.env)
+
+for file in os.listdir(PATH):
     settings = file.split("_")
     model_type = settings[1]
     USE_KG = "USEKG" in settings
@@ -33,7 +35,7 @@ for file in os.listdir(args.model_path):
     use_rules_str= f", rulesest: {ruleset}" if USE_KG else ""
     label = f"{model_type}" + use_rules_str
 
-    with open(join(args.model_path,file), "rb") as handle:
+    with open(join(PATH,file), "rb") as handle:
         data_plot = pickle.load(handle)
     
     episode_rewards[label] = data_plot["Total Reward"]
@@ -61,7 +63,7 @@ for c,(label, data) in enumerate(episode_rewards.items()):
 ax.set_xlabel("Episode")
 ax.set_ylabel("Rewards per episodes")
 ax.legend()
-plt.savefig(f"{args.env} episode_rewards_plot.png")  # Save the
+plt.savefig(f"{args.env}_episode_rewards_plot.png")  # Save the
 
 
 
@@ -85,7 +87,7 @@ plt.xlabel('Num Episodes')
 plt.ylabel('Num Agents died')
 plt.title('Num Agents died per Episode')
 plt.legend()
-plt.savefig(f"{args.env} num_agents_died_plot.png")
+plt.savefig(f"{args.env}_num_agents_died_plot.png")
 
 
 
@@ -121,4 +123,4 @@ plt.title("Wall Hits Episodes")
 plt.legend()
 
 # Display the plot
-plt.savefig(f"{args.env} wall_hits_plot.png")
+plt.savefig(f"{args.env}_wall_hits_plot.png")
