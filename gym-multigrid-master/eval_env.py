@@ -258,7 +258,7 @@ class COMAAgentWrapper:
         self.actors =[]
         for file in os.listdir(model_dir):
             actor = Actor(state_dim, action_dim).to(device)
-            actor.load_state_dict(join(model_dir, file))
+            actor.load_state_dict(torch.load(join(model_dir, file)))
         assert len(self.actors) == NUM_AGENTS
     
     def get_actions(self, obs):
@@ -293,7 +293,7 @@ if USE_KG:
     if args.model_type == "expert":
         shared_agent = Expert()
     elif args.model_type == "MAPPO":
-        shared_agent = ACAgent().load_state_dict(args.load_model_path)
+        shared_agent = ACAgent().load_state_dict(torch.load(args.load_model_path))
     elif args.model_type == "COMA":
         shared_agent = COMAAgentWrapper(args.load_model_path)
     else:
@@ -301,7 +301,7 @@ if USE_KG:
         assert False
 else:
     if args.model_type == "MAPPO":
-        shared_agent = ACAgent().load_state_dict(args.load_model_path)
+        shared_agent = ACAgent().load_state_dict(torch.load(args.load_model_path))
     elif args.model_type == "COMA":
         shared_agent = COMAAgentWrapper(args.load_model_path)
     else:
