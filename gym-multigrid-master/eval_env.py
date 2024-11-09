@@ -35,7 +35,7 @@ parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file
                     help="Ruleset")
 parser.add_argument("--viz_dir",  default=join(dirname(os.path.abspath(__file__)), "results_eval_viz"), type=str,
                     help="Ruleset")
-parser.add_argument("--steps", default=128, type=int,
+parser.add_argument("--steps", default=1000, type=int,
                     help="eval_steps")
 parser.add_argument("--vision_dim", default=7, type=int,
                     help="Ruleset")
