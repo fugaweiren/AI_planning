@@ -50,7 +50,7 @@ for file in os.listdir(PATH):
 
 colors = plt.get_cmap("tab10").colors  
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(10, 6))
 for c,(label, data) in enumerate(episode_rewards.items()):
     # Create plot
 
@@ -61,36 +61,45 @@ for c,(label, data) in enumerate(episode_rewards.items()):
             linestyle="-", color=colors[c], linewidth=2)
 
     # Shade the area under the original data
-    ax.fill_between(range(len(data)), data, color=colors[c], alpha=0.2)
+    ax.fill_between(range(len(data)), data, color=colors[c], alpha=0.1)
 
 # Add labels and legend
 ax.set_xlabel("Episode")
 ax.set_ylabel("Rewards per episodes")
-ax.legend()
-plt.savefig(f"{args.env}_episode_rewards_plot.png")  # Save the
+ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
+plt.savefig(f"{args.env}_episode_rewards_plot.png", bbox_inches='tight') # Save the
 plt.close()
 
-fig, ax = plt.subplots()
-# Position adjustments
-categories = ['0 died','1 died', '2 died', '3 died', '4 died']
-y_positions = np.arange(len(num_agents_died))
-bar_height = 0.8/len(num_agents_died)  # Half the default bar width
 
+# Set up the figure and axis
+fig, ax = plt.subplots(figsize=(10, 6))
 
-# Create a horizontal bar chart
+# Categories and positions
+categories = ['0 died', '1 died', '2 died', '3 died', '4 died']
+y_positions = np.arange(len(categories))
+
+# Bar height calculation
+bar_height = 0.8 / len(num_agents_died)
+
+# Plotting each rule set
 for c, (label, num_agents_died_arr) in enumerate(num_agents_died.items()):
     # Count occurrences of each category (0, 1, 2, 3, 4 died)
     counts = np.array([Counter(num_agents_died_arr).get(i, 0) for i in range(len(categories))])
     
-    # Plot bars with offset for each experiment
-    plt.barh(y_positions - (len(num_agents_died)/2 - c) * bar_height, counts,
-             height=bar_height, label=label, color=colors[c])
+    # Offset bars for each rule set
+    ax.barh(y_positions - (len(num_agents_died) / 2 - c) * bar_height, counts,
+            height=bar_height, label=label, color=colors[c % len(colors)])
 
-# Add labels and title
-plt.xlabel('Num Episodes')
-plt.ylabel('Num Agents died')
-plt.title('Num Agents died per Episode')
-plt.legend()
+# Labels and title
+ax.set_xlabel('Num Episodes')
+ax.set_ylabel('Num Agents Died')
+ax.set_title('Num Agents Died per Episode')
+ax.set_yticks(y_positions)
+ax.set_yticklabels(categories)
+ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+# Show or save the plot
+plt.tight_layout()
 plt.savefig(f"{args.env}_num_agents_died_plot.png")
 plt.close()
 
