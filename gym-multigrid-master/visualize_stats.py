@@ -36,7 +36,7 @@ for file in os.listdir(args.model_path):
     with open(join(args.model_path,file), "rb") as handle:
         data_plot = pickle.load(handle)
     
-    episode_rewards[label] = data_plot["Total Rewards"]
+    episode_rewards[label] = data_plot["Total Reward"]
     num_agents_died[label] = data_plot["Num Agents died"]
     wall_hits[label] = data_plot["Num Wall Hits'"]   
 

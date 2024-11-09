@@ -1576,7 +1576,7 @@ class MultiGridEnv(gym.Env):
 
         if mode == 'human':
             self.window.set_caption(f"Step {self.step_count}/ {MAX_STEPS}")
-            self.window.show_img(img)
+            #self.window.show_img(img)
 
 
         return img

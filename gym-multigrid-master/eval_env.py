@@ -35,11 +35,12 @@ parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file
                     help="Ruleset")
 parser.add_argument("--viz_dir",  default=join(dirname(os.path.abspath(__file__)), "results_eval_viz"), type=str,
                     help="Ruleset")
-parser.add_argument("--steps", default=1000, type=int,
+parser.add_argument("--steps", default=200, type=int,
                     help="eval_steps")
 parser.add_argument("--vision_dim", default=7, type=int,
                     help="Ruleset")
 args = parser.parse_args()
+
 env_entrypt = ENV_CLASS[args.env]
 ruleset= ENV_RULE_SETS[args.env][args.kg_set]
 scenario = "multigrid-collect-v0"
@@ -257,14 +258,17 @@ class COMAAgentWrapper:
         action_dim = 3
         self.actors =[]
         for file in os.listdir(model_dir):
-            actor = Actor(state_dim, action_dim).to(device)
-            actor.load_state_dict(torch.load(join(model_dir, file)))
+            if (args.env=='simple' and "actor" in file and 'irrelevant' and '20000' in file) or (args.env =='simple' and "actor" in file and "30000" in file) or (args.env == "key" and "actor" in file and "10000" in file) or (args.env == "lava" and USE_KG == False and "actor" in file and "10000" in file)\
+                or (args.env == "lava" and USE_KG == True and "actor" in file and "30000" in file):
+                actor = Actor(state_dim, action_dim).to(device)
+                actor.load_state_dict(torch.load(join(model_dir, file)))
+                self.actors.append(actor)
         assert len(self.actors) == NUM_AGENTS
     
     def get_actions(self, obs):
         actions = []
         for i in range(NUM_AGENTS):
-            with torch.no_grad:
+            with torch.no_grad():
                 pi, probs = self.actors[i](obs[i])
                 action = probs.sample()
                 actions.append(action)
@@ -272,13 +276,13 @@ class COMAAgentWrapper:
         return torch.Tensor(actions).to(device)
 
 class RandomPolicy:
-    def get_action(self, obs):
+    def get_actions(self, obs):
         return torch.randint(low=0, high=3, size=(NUM_AGENTS,)).to(device)
 
 class Expert:
     def __init__(self):
         self.kg_set = get_kg_set(ruleset)
-    def get_action(self, obs):
+    def get_actions(self, obs):
         expert_actions = get_expert_actions(obs, self.kg_set)
         x = torch.sum(expert_actions, dim=-2)
         dist = Categorical(logits=F.log_softmax(x, dim=1))
@@ -305,9 +309,9 @@ else:
     elif args.model_type == "COMA":
         shared_agent = COMAAgentWrapper(args.load_model_path)
     else:
-        print("UNKNOWN model type")
-        assert False
-    shared_agent = RandomPolicy()
+        #print("UNKNOWN model type")
+        #assert False
+        shared_agent = RandomPolicy()
 
 done = False
 progress_bar = tqdm.tqdm(range(1, TOTAL_STEPS + 1))
@@ -316,35 +320,35 @@ data_to_plot = {}
 for agent_idx in range(NUM_AGENTS):
     data_to_plot[f'Agent {agent_idx} Reward'] = []
 
-data_to_plot['Total Rewards'] = []
-data_to_plot['Num Agent died per game'] = [] 
-data_to_plot['Num Wall hits per game'] = []
-
+data_to_plot['Total Reward'] = []
+data_to_plot['Num Agents died'] = [] 
+data_to_plot['Num Wall Hits'] = []
 SAVE_FRAMES = 1
-ENABLE_LIVE_ENV_RENDER = False
-
+ENABLE_LIVE_ENV_RENDER = True
 initial_state, _ = env.reset()
 rewards = torch.zeros((MAX_STEPS, NUM_AGENTS)).to(device)
 step = 0
 frames = []
-
+state = torch.tensor(initial_state,dtype=torch.float).to(device)
 for iteration in progress_bar:
     if ENABLE_LIVE_ENV_RENDER:
         img = env.render(mode='human', highlight=True)
         if SAVE_FRAMES:
             frames.append(img)
-
+    
     with torch.no_grad():
-        action = shared_agent.get_actions(initial_state)
+        action = shared_agent.get_actions(state)
         action = action[0] if len(action.shape) ==2 else action
         next_state, reward, done, info = env.step(action.cpu().numpy())
-        state = torch.tensor(next_state).to(device)
+        state = torch.tensor(next_state, dtype=torch.float).to(device)
+        if step == MAX_STEPS-1:
+            done = True
         rewards[step] = torch.tensor(reward).to(device)
     
 
     if done:
         initial_state, info = env.reset()
-        state = torch.Tensor(initial_state).to(device)
+        state = torch.tensor(initial_state, dtype=torch.float).to(device)
 
         SAVE_FRAMES =0
         episodic_reward = rewards.sum().item()
@@ -352,10 +356,9 @@ for iteration in progress_bar:
         
         for agent_idx in range(NUM_AGENTS):
             data_to_plot[f'Agent {agent_idx} Reward'].append(rewards[:,agent_idx].sum().item())
-        data_to_plot['Total Rewards'].append(episodic_reward)
+        data_to_plot['Total Reward'].append(episodic_reward)
         data_to_plot['Num Agents died'].append(info["number of agents died:"])
         data_to_plot['Num Wall Hits'].append(info["amount of times agents hit wall:"])
-
         step =0
         rewards = torch.zeros_like(rewards)
     
@@ -376,7 +379,7 @@ plot_final_results(data_to_plot, save_path= join(results_directory,"eval_plot.pn
 with open(join(results_directory,"eval_stats"), "w+") as f:
     for agent_idx in range(NUM_AGENTS):
         f.write(f"Mean_reward for Agent {agent_idx}: {np.mean(data_to_plot[f'Agent {agent_idx} Reward'])}\n")
-    f.write(f"Mean_reward per episode: {np.mean(data_to_plot['Total Rewards'])}\n")
+    f.write(f"Mean_reward per episode: {np.mean(data_to_plot['Total Reward'])}\n")
     f.write(f"Mean deaths per episode: {np.mean(data_to_plot['Num Agents died'])}")
     f.write(f"Mean wall hits per episode: {np.mean(data_to_plot['Num Wall Hits'])}")
 
