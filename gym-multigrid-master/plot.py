@@ -1,4 +1,8 @@
 import matplotlib.pyplot as plt
+import matplotlib 
+
+matplotlib.use("Agg")
+plt.ioff()
 
 def exponential_smoothing(data, alpha=0.1):
     """Compute exponential smoothing."""
@@ -82,3 +86,4 @@ def plot_final_results(data_dict, alpha=0.1, save_path='final_plot.png'):
         ax.set_title(label)
         ax.legend(loc='upper right')
     plt.savefig(save_path)
+    plt.close()

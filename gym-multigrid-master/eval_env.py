@@ -35,7 +35,7 @@ parser.add_argument("--result_dir",  default=join(dirname(os.path.abspath(__file
                     help="Ruleset")
 parser.add_argument("--viz_dir",  default=join(dirname(os.path.abspath(__file__)), "results_eval_viz"), type=str,
                     help="Ruleset")
-parser.add_argument("--steps", default=200, type=int,
+parser.add_argument("--steps", default=128, type=int,
                     help="eval_steps")
 parser.add_argument("--vision_dim", default=7, type=int,
                     help="Ruleset")
@@ -183,8 +183,9 @@ class ACAgent(nn.Module):
         return probs
     
     def get_actions(self, x):
-
-        actions = self.get_probs(x).sample()  
+        with torch.no_grad():
+            actions = self.get_probs(x).sample()
+          
 
         return actions
 
@@ -297,7 +298,8 @@ if USE_KG:
     if args.model_type == "expert":
         shared_agent = Expert()
     elif args.model_type == "MAPPO":
-        shared_agent = ACAgent().load_state_dict(torch.load(args.load_model_path))
+        shared_agent = ACAgent().to(device)
+        shared_agent.load_state_dict(torch.load(args.load_model_path))
     elif args.model_type == "COMA":
         shared_agent = COMAAgentWrapper(args.load_model_path)
     else:
@@ -305,7 +307,8 @@ if USE_KG:
         assert False
 else:
     if args.model_type == "MAPPO":
-        shared_agent = ACAgent().load_state_dict(torch.load(args.load_model_path))
+        shared_agent = ACAgent().to(device)
+        shared_agent.load_state_dict(torch.load(args.load_model_path))
     elif args.model_type == "COMA":
         shared_agent = COMAAgentWrapper(args.load_model_path)
     else:

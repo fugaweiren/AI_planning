@@ -1495,8 +1495,8 @@ class MultiGridEnv(gym.Env):
             highlight_masks=highlight_masks if highlight else None
         )
 
-        if mode == 'human':
-            self.window.show_img(img)
+        # if mode == 'human':
+        #     self.window.show_img(img)
 
         return img
 
