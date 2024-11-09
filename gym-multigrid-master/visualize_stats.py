@@ -1,5 +1,6 @@
 import argparse
 import matplotlib.pyplot as plt
+import matplotlib
 from config import ENV_CLASS, ENV_RULE_SETS
 from plot import exponential_smoothing
 import os
@@ -8,6 +9,9 @@ import pickle
 
 import numpy as np 
 from collections import Counter
+
+matplotlib.use("Agg")
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", default="simple",
@@ -64,9 +68,9 @@ ax.set_xlabel("Episode")
 ax.set_ylabel("Rewards per episodes")
 ax.legend()
 plt.savefig(f"{args.env}_episode_rewards_plot.png")  # Save the
+plt.close()
 
-
-
+fig, ax = plt.subplots()
 # Position adjustments
 categories = ['0 died','1 died', '2 died', '3 died', '4 died']
 y_positions = np.arange(len(num_agents_died))
@@ -88,7 +92,7 @@ plt.ylabel('Num Agents died')
 plt.title('Num Agents died per Episode')
 plt.legend()
 plt.savefig(f"{args.env}_num_agents_died_plot.png")
-
+plt.close()
 
 
 from matplotlib.ticker import MaxNLocator
