@@ -40,7 +40,7 @@ for file in os.listdir(PATH):
     
     episode_rewards[label] = data_plot["Total Reward"]
     num_agents_died[label] = data_plot["Num Agents died"]
-    wall_hits[label] = data_plot["Num Wall Hits'"]   
+    wall_hits[label] = data_plot["Num Wall Hits"]   
 
 #  Plot 
 
