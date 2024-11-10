@@ -41,6 +41,7 @@ parser.add_argument("--vision_dim", default=7, type=int,
                     help="Ruleset")
 args = parser.parse_args()
 
+
 env_entrypt = ENV_CLASS[args.env]
 ruleset= ENV_RULE_SETS[args.env][args.kg_set]
 scenario = "multigrid-collect-v0"
@@ -259,8 +260,10 @@ class COMAAgentWrapper:
         action_dim = 3
         self.actors =[]
         for file in os.listdir(model_dir):
-            if (args.env=='simple' and "actor" in file and 'irrelevant' and '20000' in file) or (args.env =='simple' and "actor" in file and "30000" in file) or (args.env == "key" and "actor" in file and "10000" in file) or (args.env == "lava" and USE_KG == False and "actor" in file and "10000" in file)\
-                or (args.env == "lava" and USE_KG == True and "actor" in file and "30000" in file):
+            if (args.env=='simple' and "actor" in file and args.kg_set ==3 and '20000' in file) or (args.env =='simple' and "actor" in file and "30000" in file)\
+                or (args.env == "key" and "actor" in file and "10000" in file) or (args.env == "lava" and USE_KG == False and "actor" in file and "10000" in file)\
+                or (args.env == "lava" and USE_KG == True and "actor" in file and "30000" in file) or (args.env == "simple" and USE_KG == False and "actor" in file and "20000" in file)\
+                or  (args.env =='simple' and "actor" in file and "13000" in file):
                 actor = Actor(state_dim, action_dim).to(device)
                 actor.load_state_dict(torch.load(join(model_dir, file)))
                 self.actors.append(actor)
