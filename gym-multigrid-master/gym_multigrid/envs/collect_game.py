@@ -169,6 +169,7 @@ class CollectGameEnv(MultiGridEnv):
 
         self.death_count = 0
         self.hit_wall_count = 0
+        self.num_balls_collected = 0
 
         agents = []
         for i in agents_index:
@@ -254,6 +255,8 @@ class CollectGameEnv(MultiGridEnv):
                 if fwd_cell.index in [0, 1, self.agents[i].index]:
                     if self.agents[i].carrying is None and fwd_cell.type == "key":
                         self.agents[i].carrying = fwd_cell
+                    elif fwd_cell.type == "ball":
+                        self.num_balls_collected += 1
                     fwd_cell.cur_pos = np.array([-1, -1])
                     self.grid.set(*fwd_pos, None)
                     self._reward(i, rewards, fwd_cell.reward)
@@ -298,10 +301,12 @@ class CollectGameEnv(MultiGridEnv):
 
         ##Return info
         info = {"number of agents died:": self.death_count,
-                "amount of times agents hit wall:": self.hit_wall_count
+                "amount of times agents hit wall:": self.hit_wall_count,
+                "number of balls collected:": self.num_balls_collected
                 }
         self.death_count = 0
         self.hit_wall_count = 0
+        self.num_balls_collected = 0
         
         return obs, info
 

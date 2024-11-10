@@ -326,6 +326,7 @@ for agent_idx in range(NUM_AGENTS):
 data_to_plot['Total Reward'] = []
 data_to_plot['Num Agents died'] = [] 
 data_to_plot['Num Wall Hits'] = []
+data_to_plot['Num Balls collected'] = []
 SAVE_FRAMES = 1
 ENABLE_LIVE_ENV_RENDER = True
 initial_state, _ = env.reset()
@@ -362,6 +363,7 @@ for iteration in progress_bar:
         data_to_plot['Total Reward'].append(episodic_reward)
         data_to_plot['Num Agents died'].append(info["number of agents died:"])
         data_to_plot['Num Wall Hits'].append(info["amount of times agents hit wall:"])
+        data_to_plot['Num Balls collected'].append(info["number of balls collected:"])
         step =0
         rewards = torch.zeros_like(rewards)
     
@@ -383,8 +385,9 @@ with open(join(results_directory,"eval_stats"), "w+") as f:
     for agent_idx in range(NUM_AGENTS):
         f.write(f"Mean_reward for Agent {agent_idx}: {np.mean(data_to_plot[f'Agent {agent_idx} Reward'])}\n")
     f.write(f"Mean_reward per episode: {np.mean(data_to_plot['Total Reward'])}\n")
-    f.write(f"Mean deaths per episode: {np.mean(data_to_plot['Num Agents died'])}")
-    f.write(f"Mean wall hits per episode: {np.mean(data_to_plot['Num Wall Hits'])}")
+    f.write(f"Mean deaths per episode: {np.mean(data_to_plot['Num Agents died'])}\n")
+    f.write(f"Mean wall hits per episode: {np.mean(data_to_plot['Num Wall Hits'])}\n")
+    f.write(f"Mean balls collected per episode: {np.mean(data_to_plot['Num Balls collected'])}")
 
 
 gif_filename = join(results_directory, f'{args.env}_{args.model_type}_{FOLDER_NAME}_animation.gif')

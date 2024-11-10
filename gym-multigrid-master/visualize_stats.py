@@ -25,6 +25,7 @@ args = parser.parse_args()
 episode_rewards = {}
 num_agents_died = {}
 wall_hits = {}
+num_balls_collected = {}
 PATH = join(args.model_dir, args.env)
 
 for file in os.listdir(PATH):
@@ -44,7 +45,8 @@ for file in os.listdir(PATH):
     
     episode_rewards[label] = data_plot["Total Reward"]
     num_agents_died[label] = data_plot["Num Agents died"]
-    wall_hits[label] = data_plot["Num Wall Hits"]   
+    wall_hits[label] = data_plot["Num Wall Hits"] 
+    num_balls_collected[label] = data_plot["Num Balls collected"]  
 
 #  Plot 
 
@@ -103,6 +105,37 @@ plt.tight_layout()
 plt.savefig(f"{args.env}_num_agents_died_plot.png")
 plt.close()
 
+# Set up the figure and axis
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Categories and positions
+categories = ['0 collected', '1 ball collected', '2 balls collected', '3 balls collected', '5 balls collected']
+y_positions = np.arange(len(categories))
+
+# Bar height calculation
+bar_height = 0.8 / len(num_balls_collected)
+
+# Plotting each rule set
+for c, (label, num_balls_collected_arr) in enumerate(num_balls_collected.items()):
+    # Count occurrences of each category (0, 1, 2, 3, 4, 5 collected)
+    counts = np.array([Counter(num_balls_collected_arr).get(i, 0) for i in range(len(categories))])
+    
+    # Offset bars for each rule set
+    ax.barh(y_positions - (len(num_balls_collected) / 2 - c) * bar_height, counts,
+            height=bar_height, label=label, color=colors[c % len(colors)])
+
+# Labels and title
+ax.set_xlabel('Num Episodes')
+ax.set_ylabel('Num Balls Collected')
+ax.set_title('Num Balls Collected per Episode')
+ax.set_yticks(y_positions)
+ax.set_yticklabels(categories)
+ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+# Show or save the plot
+plt.tight_layout()
+plt.savefig(f"{args.env}_num_balls_collected_plot.png")
+plt.close()
 
 from matplotlib.ticker import MaxNLocator
 
