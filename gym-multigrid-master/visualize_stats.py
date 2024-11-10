@@ -62,8 +62,8 @@ for c,(label, data) in enumerate(episode_rewards.items()):
     ax.plot(range(ma_idx_start, len(data)), ma, label=label,
             linestyle="-", color=colors[c], linewidth=2)
 
-    # Shade the area under the original data
-    ax.fill_between(range(len(data)), data, color=colors[c], alpha=0.1)
+    # # Shade the area under the original data
+    # ax.fill_between(range(len(data)), data, color=colors[c], alpha=0.1)
 
 # Add labels and legend
 ax.set_xlabel("Episode")
